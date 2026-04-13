@@ -100,7 +100,7 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
   maxYear: number;
   firstCalendarDay: number;
   view: string;
-  years: { year: number; isThisYear: boolean }[];
+  years: { year: number; isThisYear: boolean; isToday: boolean; isSelectable: boolean }[];
   dayNames: string[];
   monthNames: Array<any>;
   dayNamesFormat: string;
@@ -145,7 +145,7 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
 
   ngOnInit() {
     this.view = 'year';
-    if(!this.date) {
+    if (!this.date) {
       this.date = new Date();
     }
     this.setOptions();
@@ -155,7 +155,10 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
     this.init();
     // Check if 'position' property is correct
     if (this.positions.indexOf(this.position) === -1) {
-      throw new TypeError(`ng-moderndatepicker: invalid position property value '${this.position}' (expected: ${this.positions.join(', ')})`);
+      const expectedValues = this.positions.join(', ');
+      const message = `ng-moderndatepicker: invalid position property value '${this.position}' (expected: ${expectedValues})`;
+
+      throw new TypeError(message);
     }
   }
 
@@ -221,7 +224,7 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
   }
 
   selectMonth(i: number): void {
-    this.date = setMonth(this.date,i);
+    this.date = setMonth(this.date, i);
     this.init();
     this.initMonthName();
     this.view = 'year';
@@ -251,19 +254,19 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
     return true;
   }
 
-  private isWeekendDay (date: Date): boolean {
+  private isWeekendDay(date: Date): boolean {
     const weekendsDay = Array.isArray(this.options.weekendsDay);
-    if(weekendsDay) {
-      return this.options.weekendsDay.indexOf(getDay(date)) != -1 ? true : false;
+    if (weekendsDay) {
+      return this.options.weekendsDay.indexOf(getDay(date)) !== -1;
     }
 
     return false;
   }
 
-  private isHoliday (date: Date): boolean {
+  private isHoliday(date: Date): boolean {
     const areHolidays = Array.isArray(this.options.holidayList);
-    if(areHolidays) {
-      return (this.options.holidayList.filter((day)=> isSameDay(day,date))).length ? true : false;
+    if (areHolidays) {
+      return this.options.holidayList.some((day) => isSameDay(day, date));
     }
 
     return false;
@@ -322,26 +325,31 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
     const range = this.maxYear - this.minYear;
     this.years = Array.from(new Array(range), (x, i) => i + this.minYear).map(year => {
       return {
-        year: year,
+        year,
         isThisYear: year === getYear(this.date),
-        isToday : year === getYear(new Date()),
+        isToday: year === getYear(new Date()),
         isSelectable: this.isYearSelectable(year)
-        };
+      };
     });
   }
 
-  private isYearSelectable(date: any) : boolean {
-     const minDate = isNil(this.options.minDate) ? false : this.options.minDate;
-     const maxDate = isNil(this.options.maxDate) ? false : this.options.maxDate;
+  private isYearSelectable(date: any): boolean {
+    const minDate = !isNil(this.options.minDate) ? this.options.minDate : null;
+    const maxDate = !isNil(this.options.maxDate) ? this.options.maxDate : null;
 
-     if ( minDate && maxDate ) {
-       return minDate.getFullYear() <= date && date <= maxDate.getFullYear();
-     } else if (minDate) {
-       return  minDate.getFullYear() <= date;
-     } else if (maxDate) {
-        return  date <= maxDate.getFullYear();
-     }
-     return true;
+    if (minDate && maxDate) {
+      return minDate.getFullYear() <= date && date <= maxDate.getFullYear();
+    }
+
+    if (minDate) {
+      return minDate.getFullYear() <= date;
+    }
+
+    if (maxDate) {
+      return date <= maxDate.getFullYear();
+    }
+
+    return true;
   }
 
   initDayNames(): void {
@@ -354,66 +362,72 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
   }
 
   initMonthName(): void {
-    let monthNames = [];
+    const monthNames = [];
     const actualDate = this.date || new Date();
-    let currentDate = new Date(actualDate);
-    const start = subYears(currentDate.setMonth(11),1);
-    for (let i = 1; i <= 12 ; i++) {
+    const currentDate = new Date(actualDate);
+    const start = subYears(new Date(currentDate.setMonth(11)), 1);
+
+    for (let i = 1; i <= 12; i++) {
       const date = addMonths(start, i);
       monthNames.push({
         name: format(date, this.monthNamesFormat, this.locale),
         isSelected: date.getMonth() === actualDate.getMonth(),
-        isThisMonth: isSameMonth(date,new Date()) && isSameYear(actualDate,new Date()),
+        isThisMonth: isSameMonth(date, new Date()) && isSameYear(actualDate, new Date()),
         isSelectable: this.isMonthSelectable(date)
       });
     }
+
     this.monthNames = monthNames;
   }
 
   private isMonthSelectable(date: Date): boolean {
+    const minDate = !isNil(this.options.minDate) ? this.options.minDate : null;
+    const maxDate = !isNil(this.options.maxDate) ? this.options.maxDate : null;
+    const year = date.getFullYear();
+    const month = date.getMonth();
 
-      const minDate = isNil(this.options.minDate) ? false : this.options.minDate;
-      const maxDate = isNil(this.options.maxDate) ? false : this.options.maxDate;
+    if (minDate && maxDate) {
+      const minYear = minDate.getFullYear();
+      const maxYear = maxDate.getFullYear();
 
-      if ( minDate && maxDate ) {
-        if(minDate.getFullYear() < date.getFullYear() && date.getFullYear() < maxDate.getFullYear()){
-            return true;
-        } else if (minDate.getFullYear() < date.getFullYear() && date.getFullYear() == maxDate.getFullYear()){
-            if(date.getMonth() <= maxDate.getMonth()){
-              return true;
-            } else { return false;}
-        } else if (minDate.getFullYear() == date.getFullYear() && date.getFullYear() < maxDate.getFullYear()){
-            if(minDate.getMonth() <= date.getMonth()){
-              return true;
-            } else { return false;}
-        } else if (minDate.getFullYear() == date.getFullYear() && date.getFullYear() == maxDate.getFullYear()){
-            if(minDate.getMonth() <= date.getMonth() && date.getMonth() <= maxDate.getMonth()){
-              return true;
-            } else { return false;}
-        } else {
-             return false;
-        }
-      } else if (minDate) {
-        if(minDate.getFullYear() < date.getFullYear()){
-            return true;
-        } else if (minDate.getFullYear() == date.getFullYear()){
-            if(minDate.getMonth() <= date.getMonth()){
-              return true;
-            } else { return false;}
-        } else {
-             return false;
-        }
-      } else if (maxDate) {
-         if(date.getFullYear() < maxDate.getFullYear()){
-             return true;
-         } else if (date.getFullYear() == maxDate.getFullYear()){
-             if(date.getMonth() <= maxDate.getMonth()){
-               return true;
-             } else { return false;}
-         } else {
-              return false;
-         }
+      if (year < minYear || year > maxYear) {
+        return false;
       }
+
+      if (year === minYear && month < minDate.getMonth()) {
+        return false;
+      }
+
+      if (year === maxYear && month > maxDate.getMonth()) {
+        return false;
+      }
+
+      return true;
+    }
+
+    if (minDate) {
+      if (year < minDate.getFullYear()) {
+        return false;
+      }
+
+      if (year === minDate.getFullYear() && month < minDate.getMonth()) {
+        return false;
+      }
+
+      return true;
+    }
+
+    if (maxDate) {
+      if (year > maxDate.getFullYear()) {
+        return false;
+      }
+
+      if (year === maxDate.getFullYear() && month > maxDate.getMonth()) {
+        return false;
+      }
+
+      return true;
+    }
 
     return true;
   }
@@ -471,17 +485,23 @@ export class NgxModerndatepickerComponent implements OnInit, OnChanges, ControlV
     if (!this.isOpened) {
       return;
     }
+
     const input = document.querySelector('.ngx-moderndatepicker-input');
 
-    if (input == null) {
+    if (input === null) {
       return;
     }
 
     if (e.target === input || input.contains(<any>e.target)) {
       return;
     }
+
     const container = document.querySelector('.ngx-moderndatepicker-calendar-container');
-    if (container && container !== e.target && !container.contains(<any>e.target) && !(<any>e.target).classList.contains('year-unit') && !(<any>e.target).classList.contains('month-unit')) {
+    const target = e.target as HTMLElement;
+    const isYearUnit = target.classList.contains('year-unit');
+    const isMonthUnit = target.classList.contains('month-unit');
+
+    if (container && container !== target && !container.contains(target) && !isYearUnit && !isMonthUnit) {
       this.close();
     }
   }

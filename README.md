@@ -1,6 +1,6 @@
 # ngx-moderndatepicker
 
-Angular 6+ Simple and interactive calender datepicker component
+Angular 13+ simple and interactive calendar datepicker component
 
 ![ngx-moderndatepicker](https://github.com/bansalss001/ngx-moderndatepicker/blob/master/src/assets/Screenshot.png)
 
@@ -18,7 +18,7 @@ npm install ngx-moderndatepicker --save
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
-import { NgModernDatepickerModule } from 'ngx-moderndatepicker';
+import { NgxModerndatepickerModule } from 'ngx-moderndatepicker';
 
 @NgModule({
   imports: [
