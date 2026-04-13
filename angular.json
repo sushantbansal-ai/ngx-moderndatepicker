@@ -132,7 +132,6 @@
       }
     }
   },
-  "defaultProject": "ngx-moderndatepicker",
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",
@@ -141,5 +140,8 @@
     "@schematics/angular:directive": {
       "prefix": "app"
     }
+  },
+  "cli": {
+    "analytics": "b0c151ab-f3cf-4b07-96d2-13cd5aa771c0"
   }
 }
